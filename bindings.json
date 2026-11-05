@@ -1,0 +1,42 @@
+{
+  "symbols": {},
+  "glue": {
+    "hb_font_t": {
+      "methods": [
+        "pointer",
+        "fromPointer"
+      ]
+    },
+    "hb_buffer_t": {
+      "methods": [
+        "pointer",
+        "fromPointer"
+      ]
+    },
+    "hb_language_t": {
+      "methods": [
+        "pointer",
+        "fromPointer"
+      ]
+    }
+  },
+  "helpers": {
+    "marshal": [
+      "phphb_features",
+      "phphb_live_ptr"
+    ],
+    "translate": []
+  },
+  "sites": {
+    "harfbuzz-null-handle": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/NullHandleTest.php"},
+    "harfbuzz-ft-face-null": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/FtFaceNullTest.php"},
+    "harfbuzz-utf8-length": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"},
+    "harfbuzz-language-length": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"},
+    "harfbuzz-num-features": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"}
+  },
+  "typemap": {
+    "hb_feature_t*": [
+      "array"
+    ]
+  }
+}

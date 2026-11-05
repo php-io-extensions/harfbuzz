@@ -1,0 +1,67 @@
+{
+    "name": "php-io-extensions/harfbuzz",
+    "type": "php-ext",
+    "description": "1:1 PHP bindings of HarfBuzz: text shaping into positioned glyphs, with hb-ft over ext-freetype faces",
+    "keywords": [
+        "harfbuzz",
+        "shaping",
+        "text",
+        "php-ext"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Project Saturn Studios, LLC",
+            "email": "info@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.4"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.11.x-dev"
+        },
+        "venusian": {
+            "system": {
+                "apt": {
+                    "depends": [
+                        "libharfbuzz0b",
+                        "libfreetype6"
+                    ]
+                },
+                "brew": {
+                    "build": [
+                        "harfbuzz",
+                        "freetype"
+                    ]
+                }
+            }
+        }
+    },
+    "php-ext": {
+        "extension-name": "harfbuzz",
+        "priority": 40,
+        "support-zts": true,
+        "support-nts": true,
+        "os-families": [
+            "linux",
+            "darwin"
+        ],
+        "configure-options": [
+            {
+                "name": "enable-harfbuzz",
+                "description": "Enable the harfbuzz extension",
+                "needs-value": false
+            }
+        ]
+    }
+}
