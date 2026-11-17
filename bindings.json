@@ -1,6 +1,18 @@
 {
   "symbols": {},
   "glue": {
+    "hb_blob_t": {
+      "methods": [
+        "pointer",
+        "fromPointer"
+      ]
+    },
+    "hb_face_t": {
+      "methods": [
+        "pointer",
+        "fromPointer"
+      ]
+    },
     "hb_font_t": {
       "methods": [
         "pointer",
@@ -23,7 +35,8 @@
   "helpers": {
     "marshal": [
       "phphb_features",
-      "phphb_live_ptr"
+      "phphb_live_ptr",
+      "phphb_variations"
     ],
     "translate": []
   },
@@ -32,10 +45,14 @@
     "harfbuzz-ft-face-null": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/FtFaceNullTest.php"},
     "harfbuzz-utf8-length": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"},
     "harfbuzz-language-length": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"},
-    "harfbuzz-num-features": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"}
+    "harfbuzz-num-features": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"},
+    "harfbuzz-variations-length": {"kind": "refusal", "outcome": 1, "probe": "tests/Probes/LengthTest.php"}
   },
   "typemap": {
     "hb_feature_t*": [
+      "array"
+    ],
+    "hb_variation_t*": [
       "array"
     ]
   }

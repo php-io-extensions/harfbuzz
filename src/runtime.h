@@ -19,7 +19,7 @@ ZEND_EXTERN_MODULE_GLOBALS(harfbuzz)
 
 typedef struct {
 	void *ptr;                     /* the native object; NULL once destroyed, or from fromPointer(0) */
-	zval library;                  /* an hb-ft font: the ext-freetype FT_Library of its face, whose FT_Done_FreeType destroys the face */
+	zval library;                  /* an hb-ft font: the ext-freetype FT_Library of its face, whose FT_Done_FreeType destroys the face; undef otherwise */
 	zend_object std;
 } phphb_handle;
 
@@ -61,7 +61,14 @@ bool phphb_probe_off(const char *id);
 		if (p == 0) { object_init_ex(return_value, scope); return; } \
 		phphb_box(return_value, (void *) (uintptr_t) p, scope); }
 
+extern zend_class_entry *phphb_ce_hb_blob_t;
+extern zend_class_entry *phphb_ce_hb_face_t;
+extern zend_class_entry *phphb_ce_hb_font_t;
+
+void phphb_register_hb_face(int module_number);
 void phphb_register_hb_font(int module_number);
+/* hb-ft, only when ext-freetype is loaded. */
+void phphb_register_hb_ft(int module_number);
 void phphb_register_hb_buffer(int module_number);
 void phphb_register_hb_shape(int module_number);
 

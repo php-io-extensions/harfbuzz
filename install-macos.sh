@@ -8,7 +8,7 @@
 # For each PHP: phpize/configure/make against that PHP's php-config, copy the
 # .so into its extension_dir, re-sign it ad hoc so amfid accepts it on first
 # load, and enable it with 40-harfbuzz.ini in its conf.d scan dir (after
-# ext-freetype's 30-freetype.ini, which it needs).
+# ext-freetype's 30-freetype.ini when that is installed: hb-ft needs it).
 #
 #   HARFBUZZ_CONFIGURE="--enable-harfbuzz-probes" ./install-macos.sh   # a probe build (tests/Probes)
 
@@ -41,7 +41,6 @@ for PHP_BIN in "${PHP_BINS[@]}"; do
     for tool in "$PHP_BIN" "$PHPIZE" "$PHP_CONFIG"; do
         [[ -x "$tool" ]] || die "$tool not found or not executable"
     done
-    "$PHP_BIN" -r 'exit(extension_loaded("freetype") ? 0 : 1);' || die "ext-freetype is not loaded in ${PHP_BIN}; install it first"
 
     step "Building for $("$PHP_BIN" -r 'echo PHP_VERSION, PHP_ZTS ? " ZTS" : " NTS";') (${PHP_BIN})"
     BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/harfbuzz-build.XXXXXX")"

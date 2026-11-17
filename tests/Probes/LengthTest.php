@@ -62,6 +62,22 @@ it('refuses a language len past the string, which HarfBuzz reads past (SIGSEGV) 
         ->and($off['signal'])->toBeIn([PROBE_SIGSEGV, PROBE_SIGBUS]);
 });
 
+it('refuses variations_length past the list, which HarfBuzz reads past (SIGSEGV) without the refusal', function (): void {
+    // A variable font: HarfBuzz compares each variation it reads with the font's axes.
+    $code = sprintf(<<<'PHP'
+        $variable = hb_font_create(hb_face_create(hb_blob_create_from_file('%s'), 0));
+        hb_font_set_variations($variable, null, 1 << 20);
+
+        return true;
+    PHP, variableFont());
+
+    $kept = hbChild($code);
+    $off = hbChild($code, 'harfbuzz-variations-length');
+
+    expect($kept['threw'])->toBe('ValueError: hb_font_set_variations(): Argument #3 ($variations_length) must not be larger than the number of elements in argument #2 ($variations)')
+        ->and($off['signal'])->toBeIn([PROBE_SIGSEGV, PROBE_SIGBUS]);
+});
+
 it('refuses num_features past the list, which HarfBuzz reads past (SIGSEGV) without the refusal', function (): void {
     $code = <<<'PHP'
         hb_buffer_add_utf8($buffer, 'ab', -1, 0, -1);

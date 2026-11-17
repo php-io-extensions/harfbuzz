@@ -20,6 +20,8 @@ A struct class is `final`, not cloneable, not serializable, with one typed publi
 
 `hb_shape` copies its `hb_feature_t` list into a C array (`phphb_features`, a `helpers.marshal` function that throws `TypeError` for an element that is not an `hb_feature_t`). A property that was `unset()` is read without the silent flag, so PHP throws its uninitialized-property `Error` and HarfBuzz is not called. `$num_features` is passed as given, after the refusal of a negative count or a count past the list (site `harfbuzz-num-features`).[^shape]
 
+`hb_font_set_variations` copies its `hb_variation_t` list (`tag` int, `value` float) the same way (`phphb_variations`, in `src/hb_font.c`), and refuses a `$variations_length` below 0 or past the list (site `harfbuzz-variations-length`).
+
 HarfBuzz reads the lengths it is given: `hb_buffer_add_utf8` refuses a `$text_length` other than -1 past the string, and an item (`$item_offset`, `$item_length`) outside the text, which HarfBuzz 8.3 reads past (`harfbuzz-utf8-length`), `hb_language_from_string` a `$len` past the string (`harfbuzz-language-length`). `hb_feature_from_string` stops at the string's terminating NUL, so its `$len` passes through.
 
 [^shape]: hb_shape and phphb_features

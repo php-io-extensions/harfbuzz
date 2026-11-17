@@ -5,7 +5,7 @@
 #
 # - Resolves PHP binary, php-config and extension dir automatically
 # - Syncs stubs/*_arginfo.h with stubs/*.stub.php, then compiles with phpize
-# - Installs harfbuzz.so, enables it for CLI, FPM, and Apache SAPIs (after ext-freetype, which it needs)
+# - Installs harfbuzz.so, enables it for CLI, FPM, and Apache SAPIs (after ext-freetype when that is installed: hb-ft needs it)
 # - Leaves the checkout clean: build artifacts are removed after install
 #
 #   HARFBUZZ_CONFIGURE="--enable-harfbuzz-probes" bash install-debian-trixie.sh   # a probe build (tests/Probes)
@@ -92,7 +92,6 @@ command -v cc >/dev/null 2>&1 || die "cc not found — install: apt install buil
 if ! pkg-config --exists 'harfbuzz >= 8.3.0'; then
     die "HarfBuzz 8.3.0 or newer not found — install: apt install libharfbuzz-dev"
 fi
-php -r 'exit(extension_loaded("freetype") ? 0 : 1);' || die "ext-freetype is not loaded; install it first"
 
 PHP_BIN_REAL="$(php -r 'echo PHP_BINARY;' 2>/dev/null)"
 PHP_BIN_DIR="$(dirname "$PHP_BIN_REAL")"

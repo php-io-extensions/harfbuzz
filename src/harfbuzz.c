@@ -1,7 +1,8 @@
 /*
  * harfbuzz: 1:1 bindings of HarfBuzz at the 8.3.0 API. Functions, handles, structs and constants keep
- * their C names. Dropping the last PHP reference does not destroy the native object. hb-ft takes the
- * FT_Face handles of ext-freetype.
+ * their C names. Dropping the last PHP reference does not destroy the native object. Fonts load from a
+ * file with HarfBuzz's own blob, face and font; hb-ft, over the FT_Face handles of ext-freetype, is
+ * registered when ext-freetype is loaded.
  */
 
 #include "runtime.h"
@@ -30,7 +31,9 @@ PHP_MINIT_FUNCTION(harfbuzz)
 	/* A probe build: env PHPHB_PROBE_OFF=<site id> turns that kept refusal off (tests/Probes). */
 	REGISTER_BOOL_CONSTANT("PHPHB_PROBES", true, CONST_PERSISTENT);
 #endif
+	phphb_register_hb_face(module_number);
 	phphb_register_hb_font(module_number);
+	phphb_register_hb_ft(module_number);
 	phphb_register_hb_buffer(module_number);
 	phphb_register_hb_shape(module_number);
 
@@ -56,7 +59,7 @@ PHP_MINFO_FUNCTION(harfbuzz)
 }
 
 static const zend_module_dep harfbuzz_deps[] = {
-	ZEND_MOD_REQUIRED("freetype")
+	ZEND_MOD_OPTIONAL("freetype")
 	ZEND_MOD_END
 };
 

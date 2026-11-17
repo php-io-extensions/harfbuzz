@@ -22,8 +22,8 @@ if test "$PHP_HARFBUZZ" != "no"; then
   PHP_SUBST([HARFBUZZ_SHARED_LIBADD])
 
   PHP_NEW_EXTENSION([harfbuzz],
-    [src/harfbuzz.c src/runtime.c src/hb_font.c src/hb_buffer.c src/hb_shape.c],
+    [src/harfbuzz.c src/runtime.c src/hb_face.c src/hb_font.c src/hb_ft.c src/hb_buffer.c src/hb_shape.c],
     [$ext_shared],, [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 -Wall -Wextra])
   PHP_ADD_BUILD_DIR([$ext_builddir/src])
-  PHP_ADD_EXTENSION_DEP(harfbuzz, freetype)
+  PHP_ADD_EXTENSION_DEP(harfbuzz, freetype, true)
 fi

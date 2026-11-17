@@ -1,7 +1,7 @@
 {
     "name": "php-io-extensions/harfbuzz",
     "type": "php-ext",
-    "description": "1:1 PHP bindings of HarfBuzz: text shaping into positioned glyphs, with hb-ft over ext-freetype faces",
+    "description": "1:1 PHP bindings of HarfBuzz: text shaping into positioned glyphs, with HarfBuzz's own font loading, and hb-ft over ext-freetype faces when it is loaded",
     "keywords": [
         "harfbuzz",
         "shaping",

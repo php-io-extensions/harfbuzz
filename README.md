@@ -2,11 +2,11 @@
 
 <h1>ext-harfbuzz</h1>
 
-<h3>HarfBuzz bound 1:1 into PHP 8.4+, at the 8.3.0 API, over ext-freetype faces</h3>
+<h3>HarfBuzz bound 1:1 into PHP 8.4+, at the 8.3.0 API</h3>
 
 
 [![CI](https://img.shields.io/github/actions/workflow/status/php-io-extensions/harfbuzz/ci.yml?style=flat-square&label=CI)](https://github.com/php-io-extensions/harfbuzz/actions/workflows/ci.yml)
-[![HarfBuzz API](https://img.shields.io/badge/HarfBuzz_API-3.8%25_%2819%2F497%29-blue?style=flat-square)](SUPPORT.md)
+[![HarfBuzz API](https://img.shields.io/badge/HarfBuzz_API-5.2%25_%2826%2F497%29-blue?style=flat-square)](SUPPORT.md)
 [![Packagist](https://img.shields.io/packagist/v/php-io-extensions/harfbuzz?style=flat-square)](https://packagist.org/packages/php-io-extensions/harfbuzz)
 [![PHP](https://img.shields.io/packagist/dependency-v/php-io-extensions/harfbuzz/php?style=flat-square&label=PHP)](https://packagist.org/packages/php-io-extensions/harfbuzz)
 [![License](https://img.shields.io/github/license/php-io-extensions/harfbuzz?style=flat-square)](LICENSE)
@@ -20,19 +20,19 @@ Drawing text is more than drawing one glyph per character. "fi" can be one ligat
 
 <b>HarfBuzz</b> is that something. It is the shaping engine behind Chrome, Firefox, Android, GNOME and LibreOffice: give it a font and a buffer of text, call `hb_shape()`, and read back glyph ids, clusters, advances and offsets, with the font's OpenType features applied. It is written in C, and its documentation covers every call.
 
-<b>The only problem?</b> PHP can't reach it. This extension binds HarfBuzz one to one under the C names, at the HarfBuzz 8.3.0 API: fonts over [ext-freetype](https://github.com/php-io-extensions/freetype) faces (hb-ft), buffers and their segment properties, shaping with features, and the shaped glyph infos and positions. Structs are typed classes, lists are PHP arrays with their counts kept as separate arguments, and the lengths HarfBuzz would read past are refused before it reads them. No defaults, no composites, no opinions: what HarfBuzz documents is what you call.
+<b>The only problem?</b> PHP can't reach it. This extension binds HarfBuzz one to one under the C names, at the HarfBuzz 8.3.0 API: fonts opened from a file by HarfBuzz itself, or over [ext-freetype](https://github.com/php-io-extensions/freetype) faces (hb-ft) when that extension is loaded, buffers and their segment properties, shaping with features, and the shaped glyph infos and positions. Structs are typed classes, lists are PHP arrays with their counts kept as separate arguments, and the lengths HarfBuzz would read past are refused before it reads them. No defaults, no composites, no opinions: what HarfBuzz documents is what you call.
 
 ## Basic usage
 
 Most ways you will interface with ext-harfbuzz are in two parts -
 
-Make a font and fill a buffer. The font is an hb-ft font over an ext-freetype `FT_Face` at the size you set in FreeType; the buffer holds UTF-8 text, and `hb_buffer_guess_segment_properties()` picks its direction, script and language:
+Make a font and fill a buffer. HarfBuzz opens the file into a blob, makes face 0 of it, and makes a font that reads the face with its own OpenType functions, in font units until you set a scale; the buffer holds UTF-8 text, and `hb_buffer_guess_segment_properties()` picks its direction, script and language:
 
 ```php
-FT_Init_FreeType($library);
-FT_New_Face($library, '/System/Library/Fonts/Menlo.ttc', 0, $face);   // DejaVuSansMono.ttf on Linux
-FT_Set_Pixel_Sizes($face, 0, 32);
-$font = hb_ft_font_create_referenced($face);
+$blob = hb_blob_create_from_file('/System/Library/Fonts/Menlo.ttc');   // DejaVuSansMono.ttf on Linux
+$face = hb_face_create($blob, 0);
+$font = hb_font_create($face);
+hb_font_set_scale($font, 32 * 64, 32 * 64);   // 32 pixels, in 26.6 fixed point
 
 $buffer = hb_buffer_create();
 hb_buffer_add_utf8($buffer, "Café e\u{0301}", -1, 0, -1);
@@ -55,8 +55,8 @@ printf("width %.2f px\n", $x / 64);
 
 hb_buffer_destroy($buffer);
 hb_font_destroy($font);
-FT_Done_Face($face);
-FT_Done_FreeType($library);
+hb_face_destroy($face);
+hb_blob_destroy($blob);
 ```
 
 ```console
@@ -72,13 +72,22 @@ width 115.59 px
 
 `é` is two bytes, so the space is cluster 5. The decomposed `e` and U+0301 at bytes 6 to 8 became the same precomposed glyph 171 as the `é` before it: one glyph, one cluster. Load each glyph id with `FT_Load_Glyph()` and draw it at its `x`.
 
+With ext-freetype loaded, the font can also be an hb-ft font over an `FT_Face`, at the size you set in FreeType. It shapes the text above the same way:
+
+```php
+FT_Init_FreeType($library);
+FT_New_Face($library, '/System/Library/Fonts/Menlo.ttc', 0, $ftFace);
+FT_Set_Pixel_Sizes($ftFace, 0, 32);
+$font = hb_ft_font_create_referenced($ftFace);
+```
+
 ## Requirements
 
 | | |
 |---|---|
 | OS | Linux or macOS. `composer.json` lists those two families. |
 | PHP | 8.4 or newer, NTS or ZTS. |
-| Extensions | [ext-freetype](https://github.com/php-io-extensions/freetype), loaded first: `hb_ft_font_create_referenced()` takes its `FT_Face`. The installers write `40-harfbuzz.ini`, after ext-freetype's `30-freetype.ini`. |
+| Extensions | None. [ext-freetype](https://github.com/php-io-extensions/freetype) is optional: when it is loaded, it starts first and hb-ft (`hb_ft_font_create_referenced()`, `hb_ft_font_changed()`) is registered; without it those two functions do not exist. The installers write `40-harfbuzz.ini`, after ext-freetype's `30-freetype.ini`. |
 | Libraries | HarfBuzz 8.3.0 or newer, built with FreeType (hb-ft), with its headers, found through `pkg-config` (`harfbuzz`, `freetype2`). 8.3.0 is the floor: nothing newer is bound. |
 
 To build it you need a C compiler, `pkg-config`, HarfBuzz's and FreeType's development files, and the development files of the PHP you intend to load it into:
@@ -96,16 +105,16 @@ brew install pkgconf harfbuzz freetype php@8.4
 
 ### With PHP PIE (recommended)
 
-[PIE](https://github.com/php/pie) is the PHP Foundation's installer for extensions. It downloads the tagged source from Packagist, builds it against the PHP on your `PATH`, installs the module and enables it. `sudo` where your PHP's extension directory is root-owned, as on Debian; not on a Homebrew Mac. Install the libraries and ext-freetype first:
+[PIE](https://github.com/php/pie) is the PHP Foundation's installer for extensions. It downloads the tagged source from Packagist, builds it against the PHP on your `PATH`, installs the module and enables it. `sudo` where your PHP's extension directory is root-owned, as on Debian; not on a Homebrew Mac. Install the libraries first, and ext-freetype too if you want hb-ft:
 
 ```bash
-pie install php-io-extensions/freetype
+pie install php-io-extensions/freetype   # optional: hb-ft
 pie install php-io-extensions/harfbuzz
 ```
 
 ### Manually (install script)
 
-The repository ships two installers, one per platform. Each one stops when ext-freetype is not loaded, builds for each PHP it targets, installs `harfbuzz.so` into that PHP's `extension_dir`, writes `40-harfbuzz.ini` into its `conf.d` scan directory, and checks the module loads. The macOS one builds in a temporary copy of the checkout and ad-hoc signs the module so the system loads it on first use; the Debian one builds in the checkout, writes the ini into the CLI, FPM and Apache `conf.d` of that PHP, and cleans the build products out afterwards.
+The repository ships two installers, one per platform. Each one builds for each PHP it targets, installs `harfbuzz.so` into that PHP's `extension_dir`, writes `40-harfbuzz.ini` into its `conf.d` scan directory, and checks the module loads. The macOS one builds in a temporary copy of the checkout and ad-hoc signs the module so the system loads it on first use; the Debian one builds in the checkout, writes the ini into the CLI, FPM and Apache `conf.d` of that PHP, and cleans the build products out afterwards.
 
 ```bash
 git clone https://github.com/php-io-extensions/harfbuzz.git
@@ -127,7 +136,7 @@ make -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
 sudo make install
 ```
 
-Then enable it after ext-freetype: add `extension=harfbuzz.so` to your `php.ini` below `extension=freetype.so`, or drop that line into a file in the scan directory that `php --ini` reports, named to sort after freetype's.
+Then enable it: add `extension=harfbuzz.so` to your `php.ini`, or drop that line into a file in the scan directory that `php --ini` reports. With ext-freetype, put it after `extension=freetype.so`, or name the file to sort after freetype's.
 
 ### Verify
 
@@ -146,11 +155,13 @@ HarfBuzz library => 14.6.0
 
 ## API
 
-Function, handle, struct, field and constant names are the C names, so [HarfBuzz's API reference](https://harfbuzz.github.io/reference-manual.html) is the reference: 19 functions, one stub per group in [`stubs/`](stubs), each declared with its PHP types. [SUPPORT.md](SUPPORT.md) lists every function HarfBuzz 8.3.0 declares in its public headers, bound or not; the API badge is computed from it.
+Function, handle, struct, field and constant names are the C names, so [HarfBuzz's API reference](https://harfbuzz.github.io/reference-manual.html) is the reference: 26 functions, one stub per group in [`stubs/`](stubs), each declared with its PHP types. [SUPPORT.md](SUPPORT.md) lists every function HarfBuzz 8.3.0 declares in its public headers, bound or not; the API badge is computed from it.
 
 | Stub | Functions | What it covers |
 |---|---|---|
-| `hb_font` | 4 | `hb_ft_font_create_referenced()`, `hb_font_destroy()`, `hb_font_set_scale()`, `hb_ft_font_changed()`; the `hb_font_t` handle. |
+| `hb_face` | 5 | `hb_blob_create_from_file()`, `hb_blob_destroy()`, `hb_face_count()`, `hb_face_create()`, `hb_face_destroy()`; the `hb_blob_t` and `hb_face_t` handles. |
+| `hb_font` | 4 | `hb_font_create()`, `hb_font_destroy()`, `hb_font_set_scale()`, `hb_font_set_variations()` (the instance of a variable font); the `hb_font_t` handle and `hb_variation_t`. |
+| `hb_ft` | 2 | `hb_ft_font_create_referenced()` and `hb_ft_font_changed()`. Registered only when ext-freetype is loaded. |
 | `hb_buffer` | 13 | Create, destroy, reset, `hb_buffer_add_utf8()`, the segment properties (direction, script, language, cluster level, guessed), `hb_language_from_string()`, the length, glyph infos and positions; `hb_buffer_t`, `hb_language_t`, `hb_glyph_info_t`, `hb_glyph_position_t`. |
 | `hb_shape` | 2 | `hb_shape()` and `hb_feature_from_string()`; `hb_feature_t`. |
 | `harfbuzz` | — | The `HB_DIRECTION_*`, `HB_SCRIPT_*`, `HB_BUFFER_CLUSTER_LEVEL_*` constants, `HB_FEATURE_GLOBAL_START` and `HB_FEATURE_GLOBAL_END`. |
@@ -161,14 +172,14 @@ Every C parameter is its own PHP parameter, in C order. The only differences fro
 
 - `const char *` is a `string`; its length stays its own parameter: `hb_buffer_add_utf8($buffer, $text, -1, 0, -1)`.
 - An out-parameter is a by-reference parameter: `hb_feature_from_string('-kern', -1, $feature)` writes an `hb_feature_t` to `$feature`, and `hb_buffer_get_glyph_infos($buffer, $length)` writes the count to `$length`.
-- `const hb_feature_t *features` is a list of `hb_feature_t`, or `null`; `$num_features` stays its own parameter. An array HarfBuzz returns with an out count is a list of fresh copies.
+- `const hb_feature_t *features` is a list of `hb_feature_t`, or `null`; `$num_features` stays its own parameter. `const hb_variation_t *variations` is a list of `hb_variation_t`, or `null`, with `$variations_length` its own parameter. An array HarfBuzz returns with an out count is a list of fresh copies.
 - HarfBuzz's integer types and enums (`hb_codepoint_t`, `hb_position_t`, `hb_direction_t`, `hb_script_t`, …) are `int`. `hb_bool_t` is `bool`.
-- A struct is a `final` class with one typed public property per field: `hb_glyph_info_t` (`codepoint`, `mask`, `cluster`), `hb_glyph_position_t` (`x_advance`, `y_advance`, `x_offset`, `y_offset`), `hb_feature_t` (`tag`, `value`, `start`, `end`). HarfBuzz's private `var` fields are not read. An `hb_feature_t` property that was `unset()` is not read as 0: `hb_shape()` throws PHP's `Error` for an uninitialized typed property.
-- `hb_font_t`, `hb_buffer_t` and `hb_language_t` are `final` handles with a private constructor, not cloneable or serializable, with `pointer(): int` and `static fromPointer(int $pointer): static`. `fromPointer()` trusts any address. The same native pointer and class in one thread is the same PHP object.
+- A struct is a `final` class with one typed public property per field: `hb_glyph_info_t` (`codepoint`, `mask`, `cluster`), `hb_glyph_position_t` (`x_advance`, `y_advance`, `x_offset`, `y_offset`), `hb_feature_t` (`tag`, `value`, `start`, `end`), `hb_variation_t` (`tag`, `value`). HarfBuzz's private `var` fields are not read. An `hb_feature_t` property that was `unset()` is not read as 0: `hb_shape()` throws PHP's `Error` for an uninitialized typed property.
+- `hb_blob_t`, `hb_face_t`, `hb_font_t`, `hb_buffer_t` and `hb_language_t` are `final` handles with a private constructor, not cloneable or serializable, with `pointer(): int` and `static fromPointer(int $pointer): static`. `fromPointer()` trusts any address. The same native pointer and class in one thread is the same PHP object.
 
 ### Lifetime
 
-Dropping the last PHP reference does not destroy the native object. `hb_font_destroy()` and `hb_buffer_destroy()` release their handle; a second destroy passes NULL, which HarfBuzz takes. HarfBuzz interns languages, so an `hb_language_t` is never released; `hb_language_from_string()` answers a handle holding NULL (`HB_LANGUAGE_INVALID`) for an empty tag. An hb-ft font holds its own reference to the FreeType face, so `FT_Done_Face()` alone leaves the font working.
+Dropping the last PHP reference does not destroy the native object. `hb_blob_destroy()`, `hb_face_destroy()`, `hb_font_destroy()` and `hb_buffer_destroy()` release their handle; a second destroy passes NULL, which HarfBuzz takes. A face references its blob and a font its face, so the blob and face can be destroyed once the font is made. A blob or face handle that holds NULL is passed to HarfBuzz, which reads it as the empty blob or face, and `hb_blob_create_from_file()` answers the empty blob for a file that does not open: a font over either has no glyphs. HarfBuzz interns languages, so an `hb_language_t` is never released; `hb_language_from_string()` answers a handle holding NULL (`HB_LANGUAGE_INVALID`) for an empty tag. An hb-ft font holds its own reference to the FreeType face, so `FT_Done_Face()` alone leaves the font working.
 
 HarfBuzz 8.3's hb-ft takes advances from the FreeType size and ignores `hb_font_set_scale()`; 9 and newer scale them. After `FT_Set_Pixel_Sizes()`, call `hb_ft_font_changed()`: both give the same advances then.
 
@@ -182,10 +193,11 @@ HarfBuzz reads the objects and lengths it is given without checking them. The ex
 - A `$text_length` other than -1 larger than the string, or an item (`$item_offset`, `$item_length`) outside the text, in `hb_buffer_add_utf8()`: `ValueError`.
 - A `$len` larger than the string in `hb_language_from_string()`: `ValueError`.
 - A `$num_features` below 0 or larger than the list (0 for `null`) in `hb_shape()`: `ValueError`. A list element that is not an `hb_feature_t` is a `TypeError`.
+- A `$variations_length` below 0 or larger than the list (0 for `null`) in `hb_font_set_variations()`: `ValueError`. A list element that is not an `hb_variation_t` is a `TypeError`.
 
 ## Extensions you might use with this one
 
-* [ext-freetype](https://github.com/php-io-extensions/freetype): required. It opens and sizes the face HarfBuzz shapes with, and renders the glyph ids HarfBuzz returns.
+* [ext-freetype](https://github.com/php-io-extensions/freetype): optional. It renders the glyph ids HarfBuzz returns, and with it loaded, hb-ft shapes with a face FreeType opened and sized.
 * [ext-fontconfig](https://github.com/php-io-extensions/fontconfig): finds the font for a family, or a fallback font for the characters the first one lacks, so each run of text shapes with a font that has its glyphs.
 
 ## AI-assisted development
@@ -210,7 +222,7 @@ Point your agent at the repo and it has the same context the maintainer has. Poi
 
 ## Running the test suite
 
-The suite is Pest v4: shaping Latin text, a combining mark, invalid UTF-8, right-to-left text and a kerning pair with `-kern`, features, scale changes, memory faces, handle identity, and the coverage script. It runs on Linux and macOS, with Menlo on macOS and DejaVu Sans Mono on Linux (`fonts-dejavu-core`), and needs ext-freetype. Build both modules, then enable them through an ini scan directory rather than `-d`, so the child processes the tests start load them too:
+The suite is Pest v4: shaping Latin text, a combining mark, invalid UTF-8, right-to-left text and a kerning pair with `-kern`, features, scale changes, fonts opened by HarfBuzz itself, loading without ext-freetype, memory faces, handle identity, and the coverage script. It runs on Linux and macOS, with Menlo on macOS and DejaVu Sans Mono on Linux (`fonts-dejavu-core`), and needs ext-freetype for its hb-ft tests. Build both modules, then enable them through an ini scan directory rather than `-d`, so the child processes the tests start load them too:
 
 ```bash
 git clone https://github.com/php-io-extensions/freetype.git
@@ -226,11 +238,11 @@ PHP_INI_SCAN_DIR=":/tmp/harfbuzz-ini" php -d memory_limit=128M vendor/bin/pest
 ```
 
 ```console
-Tests:    11 skipped, 17 passed (38 assertions)
-Duration: 2.57s
+Tests:    12 skipped, 31 passed (79 assertions)
+Duration: 13.32s
 ```
 
-The eleven skipped tests are in [`tests/Probes`](tests/Probes): they run only against a probe build (`./configure --enable-harfbuzz --enable-harfbuzz-probes`, or `HARFBUZZ_CONFIGURE=--enable-harfbuzz-probes ./install-macos.sh`), which can turn each refusal off to show the crash it prevents. On macOS the probes run their child processes under libgmalloc, so a short read faults every time; two of them need its guard pages and skip on Linux. Never install a probe build for use.
+The twelve skipped tests are in [`tests/Probes`](tests/Probes): they run only against a probe build (`./configure --enable-harfbuzz --enable-harfbuzz-probes`, or `HARFBUZZ_CONFIGURE=--enable-harfbuzz-probes ./install-macos.sh`), which can turn each refusal off to show the crash it prevents. On macOS the probes run their child processes under libgmalloc, so a short read faults every time; two of them need its guard pages and skip on Linux. Never install a probe build for use.
 
 The leading `:` keeps your PHP's own scan directory and adds the second one. If that PHP already loads an installed `freetype.so` or `harfbuzz.so`, the suite warns `Module "harfbuzz" is already loaded` and tests the installed one instead; copy the scan directory somewhere, replace its freetype and harfbuzz inis with the lines above, and point `PHP_INI_SCAN_DIR` at the copy without the colon. A module only loads in the PHP whose `phpize` built it: for Homebrew's ZTS build, run `phpize` and pass `--with-php-config` from `/opt/homebrew/opt/php@8.4-zts/bin`. Set `XDEBUG_MODE=off` for any timing you intend to read.
 

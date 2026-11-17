@@ -58,3 +58,4 @@ jobs:
         run: |
           php -n -d extension="$PWD/freetype/modules/freetype.so" -d extension="$PWD/modules/harfbuzz.so" -r 'exit(extension_loaded("harfbuzz") ? 0 : 1);'
           php -n -d extension="$PWD/freetype/modules/freetype.so" -d extension="$PWD/modules/harfbuzz.so" --ri harfbuzz
+          php -n -d extension="$PWD/modules/harfbuzz.so" -r 'exit(extension_loaded("harfbuzz") && function_exists("hb_font_create") && ! function_exists("hb_ft_font_create_referenced") ? 0 : 1);'

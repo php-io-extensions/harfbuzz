@@ -15,11 +15,18 @@ final class hb_font_t
     public static function fromPointer(int $pointer): static {}
 }
 
-/** $ft_face is an ext-freetype FT_Face. HarfBuzz references the native face; FT_Done_Face drops one reference. */
-function hb_ft_font_create_referenced(FT_Face $ft_face): hb_font_t {}
+final class hb_variation_t
+{
+    public int $tag = 0;
+    public float $value = 0.0;
+}
+
+/** The font references the face and reads it with HarfBuzz's OpenType functions: hb_face_destroy() drops one reference. */
+function hb_font_create(hb_face_t $face): hb_font_t {}
 
 function hb_font_destroy(hb_font_t $font): void {}
 
 function hb_font_set_scale(hb_font_t $font, int $x_scale, int $y_scale): void {}
 
-function hb_ft_font_changed(hb_font_t $font): void {}
+/** $variations is a list of hb_variation_t, or null; $variations_length is passed as given. */
+function hb_font_set_variations(hb_font_t $font, ?array $variations, int $variations_length): void {}
